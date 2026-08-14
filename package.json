@@ -1,7 +1,7 @@
 {
   "name": "dsh-web-open",
-  "version": "0.1.0",
-  "description": "Auto-open the default browser when `dsh web` starts serving (DeepSeek Harness plugin)",
+  "version": "0.2.1",
+  "description": "Auto-open the browser, show a whale tray icon, and create a desktop shortcut for `dsh web` (DeepSeek Harness plugin)",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
@@ -14,6 +14,7 @@
   },
   "files": [
     "lib",
+    "assets",
     "README.md",
     "LICENSE"
   ],

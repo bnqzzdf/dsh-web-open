@@ -1,0 +1,1 @@
+Set-Content -Path 'C:\CodeSpace\dsh-web-open\hello-out.txt' -Value 'HELLO FROM SPAWN'
