@@ -28,6 +28,7 @@ describe('dsh-web-open plugin', () => {
     delete process.env.DSH_WEB_TRAY
     delete process.env.DSH_WEB_SHORTCUT
     delete process.env.DSH_WEB_HIDE_CONSOLE
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true })
   })
 
   afterEach(() => {
@@ -87,6 +88,32 @@ describe('dsh-web-open plugin', () => {
     expect(ctx.get).not.toHaveBeenCalled()
     expect(ctx.effect).not.toHaveBeenCalled()
     expect(spawnMock).not.toHaveBeenCalled()
+    logSpy.mockRestore()
+  })
+
+  it('on linux only opens the browser with xdg-open and never spawns the tray helper', () => {
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true })
+    const ctx = makeCtx(3080)
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    apply(ctx as never)
+    vi.advanceTimersByTime(1200)
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[0]).toBe('xdg-open')
+    const allArgs = spawnMock.mock.calls.map((c) => c[1] as string[]).flat().join(' ')
+    expect(allArgs).not.toContain('powershell')
+    logSpy.mockRestore()
+  })
+
+  it('on darwin only opens the browser with open and never spawns the tray helper', () => {
+    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true })
+    const ctx = makeCtx(3080)
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    apply(ctx as never)
+    vi.advanceTimersByTime(1200)
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[0]).toBe('open')
+    const allArgs = spawnMock.mock.calls.map((c) => c[1] as string[]).flat().join(' ')
+    expect(allArgs).not.toContain('powershell')
     logSpy.mockRestore()
   })
 
