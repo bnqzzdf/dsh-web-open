@@ -74,6 +74,21 @@ if (-not $target -and (Test-DshPort 3080)) {
   $target = 'http://127.0.0.1:3080'
 }
 if ($target) {
+  # Make sure a tray helper is up for the running instance (it may have
+  # died with a previous session). Only spawn when none exists, so the
+  # single-tray mutex stays intact.
+  $helperUp = Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" | Where-Object { $_.CommandLine -match 'dsh-tray-helper' }
+  if (-not $helperUp) {
+    $port = [int]($target -replace '^https?://[^:]+:(\d+).*$', '$1')
+    $owner = (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
+    $homeDir = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE '.dsh' }
+    $helper = Join-Path $homeDir 'profiles\web\node_modules\dsh-web-open\assets\dsh-tray-helper.ps1'
+    if ($owner -and (Test-Path $helper)) {
+      $ico = $helper -replace 'dsh-tray-helper\.ps1$', 'dsh.ico'
+      Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',$helper,'-HostPid',"$owner",'-Url',$target,'-IconPath',$ico) -WindowStyle Hidden
+      Add-Content -Path (Join-Path $env:LOCALAPPDATA 'dsh-web-open\launch.log') -Value ("[launch] " + (Get-Date -Format 'HH:mm:ss') + " tray helper respawned for " + $target) -Encoding UTF8
+    }
+  }
   Start-Process $target
   Add-Content -Path (Join-Path $env:LOCALAPPDATA 'dsh-web-open\launch.log') -Value ("[launch] " + (Get-Date -Format 'HH:mm:ss') + " opened " + $target) -Encoding UTF8
 } else {
