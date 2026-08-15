@@ -1,7 +1,15 @@
 #!/usr/bin/env node
-// dsh-web-open-install: one-shot installer for the dsh-web-open plugin.
-// Adds the npm dependency and the cordis.patch.yml insert to the dsh web
-// profile, then runs pnpm install. Idempotent: safe to run repeatedly.
+// dsh-web-open installer: one-shot setup / update / reinstall for the
+// dsh-web-open plugin in a dsh web profile.
+//
+//   dsh-web-open             install or repair (idempotent; also fixes a
+//                             missing cordis.patch.yml registration)
+//   dsh-web-open update       upgrade the plugin to the latest version
+//   dsh-web-open reinstall    force a clean reinstall
+//   --profile <name>          target profile (default: web)
+//
+// Every mode ensures the plugin is registered in cordis.patch.yml, so you
+// never have to edit profile files by hand.
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -14,12 +22,14 @@ const myPkg = require('./package.json')
 const args = process.argv.slice(2)
 const flagIdx = args.indexOf('--profile')
 const profileName = flagIdx >= 0 && args[flagIdx + 1] ? args[flagIdx + 1] : 'web'
+const sub = args[0] && !args[0].startsWith('--') ? args[0] : 'install'
 
 const dshHome = process.env.DSH_HOME ?? join(homedir(), '.dsh')
 const profileDir = join(dshHome, 'profiles', profileName)
 const patchPath = join(profileDir, 'cordis.patch.yml')
 const pkgPath = join(profileDir, 'package.json')
 
+console.log(`[dsh-web-open-install] mode: ${sub}`)
 console.log(`[dsh-web-open-install] profile: ${profileDir}`)
 
 if (!existsSync(pkgPath)) {
@@ -28,21 +38,40 @@ if (!existsSync(pkgPath)) {
   process.exit(1)
 }
 
-let changed = false
-
-// 1) npm dependency
+let needInstall = false
 const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
 pkg.dependencies = pkg.dependencies ?? {}
-if (!pkg.dependencies['dsh-web-open']) {
-  pkg.dependencies['dsh-web-open'] = `^${myPkg.version}`
+
+// 1) dependency entry
+const current = pkg.dependencies['dsh-web-open']
+const desired = `^${myPkg.version}`
+if (sub === 'update') {
+  if (current !== desired) {
+    pkg.dependencies['dsh-web-open'] = desired
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
+    console.log(`[dsh-web-open-install] dependency updated ${current ?? 'none'} -> ${desired}`)
+    needInstall = true
+  } else {
+    console.log(`[dsh-web-open-install] dependency already at ${desired}`)
+  }
+} else if (!current) {
+  pkg.dependencies['dsh-web-open'] = desired
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
-  console.log(`[dsh-web-open-install] added dependency dsh-web-open@^${myPkg.version}`)
-  changed = true
+  console.log(`[dsh-web-open-install] added dependency dsh-web-open@${desired}`)
+  needInstall = true
 } else {
-  console.log('[dsh-web-open-install] dependency already present')
+  console.log(`[dsh-web-open-install] dependency present (${current})`)
+  if (sub === 'reinstall') {
+    if (current !== desired) {
+      pkg.dependencies['dsh-web-open'] = desired
+      writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
+      console.log(`[dsh-web-open-install] dependency aligned to ${desired}`)
+    }
+    needInstall = true
+  }
 }
 
-// 2) cordis.patch.yml insert
+// 2) cordis.patch.yml registration (always ensured)
 const INSERT = '- insert:\n    - id: web-open\n      name: dsh-web-open\n'
 if (existsSync(patchPath)) {
   const raw = readFileSync(patchPath, 'utf8')
@@ -52,24 +81,22 @@ if (existsSync(patchPath)) {
     const trimmed = raw.trim()
     let next
     if (trimmed === '[]' || trimmed === '') {
-      // fresh profile: keep leading comments, drop the [] flow marker
       const comment = raw.replace(/\[\]\s*$/, '').trimEnd()
       next = comment ? comment + '\n\n' + INSERT : INSERT
     } else {
-      // existing block list: append a new element
       next = raw.trimEnd() + '\n' + INSERT
     }
     writeFileSync(patchPath, next)
-    console.log('[dsh-web-open-install] patch updated (web-open inserted)')
-    changed = true
+    console.log('[dsh-web-open-install] patch fixed (web-open registered)')
+    needInstall = true
   }
 } else {
   writeFileSync(patchPath, INSERT)
   console.log('[dsh-web-open-install] created cordis.patch.yml with web-open')
-  changed = true
+  needInstall = true
 }
 
-// 3) install dependencies (pnpm, then corepack fallback)
+// 3) install / update / reinstall
 const run = (cmd, a) => {
   if (process.platform === 'win32') {
     const line = `${cmd} ${a.map((x) => `"${x}"`).join(' ')}`
@@ -77,18 +104,32 @@ const run = (cmd, a) => {
   }
   return spawnSync(cmd, a, { cwd: profileDir, stdio: 'inherit' })
 }
-if (changed) {
-  console.log('[dsh-web-open-install] installing dependencies...')
-  let status = run('pnpm', ['install']).status
-  if (status !== 0) status = run('corepack', ['pnpm', 'install']).status
-  if (status !== 0) {
-    console.log('[dsh-web-open-install] automatic install failed; run it manually:')
-    console.log(`    cd ${profileDir} && pnpm install`)
+const runPnpm = (a) => {
+  let s = run('pnpm', a).status
+  if (s !== 0) s = run('corepack', ['pnpm', ...a]).status
+  return s
+}
+
+if (sub === 'reinstall') {
+  console.log('[dsh-web-open-install] reinstalling (--force)...')
+  const s = runPnpm(['install', '--force'])
+  console.log(s === 0 ? '[dsh-web-open-install] reinstall done' : '[dsh-web-open-install] reinstall failed; run pnpm install manually in ' + profileDir)
+} else if (sub === 'update') {
+  if (needInstall) {
+    console.log('[dsh-web-open-install] updating...')
+    const s = runPnpm(['update', 'dsh-web-open'])
+    console.log(s === 0 ? '[dsh-web-open-install] update done' : '[dsh-web-open-install] update failed; run pnpm update manually in ' + profileDir)
   } else {
-    console.log('[dsh-web-open-install] dependencies installed')
+    console.log('[dsh-web-open-install] nothing to update')
   }
+} else if (needInstall) {
+  console.log('[dsh-web-open-install] installing...')
+  const s = runPnpm(['install'])
+  console.log(s === 0 ? '[dsh-web-open-install] install done' : '[dsh-web-open-install] install failed; run pnpm install manually in ' + profileDir)
+} else {
+  console.log('[dsh-web-open-install] everything already in place')
 }
 
 console.log('')
-console.log('[dsh-web-open-install] done. Restart dsh web for the plugin to take effect:')
+console.log('[dsh-web-open-install] done. Restart dsh web for changes to take effect:')
 console.log('    dsh web')

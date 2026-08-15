@@ -25,13 +25,15 @@ Windows 上额外提供完整的桌面体验：
 > ⚠️ **重要**：`dsh plugin add`（或 pnpm add）只安装依赖包，**不会激活插件**。
 > 插件必须同时在 `cordis.patch.yml` 中注册才会被加载（否则不会打开浏览器、不会显示托盘）。
 
-### 方式一：一键安装（推荐）
+### 方式一：一键安装 / 升级 / 重装（推荐）
 
 ```bash
-npx -y dsh-web-open
+npx -y dsh-web-open              # 安装或修复（幂等，自动注册 patch）
+npx -y dsh-web-open update       # 升级到最新版本
+npx -y dsh-web-open reinstall    # 强制重装
 ```
 
-自动完成三步：添加依赖 + 注册到 `cordis.patch.yml` + `pnpm install`（幂等，可重复运行）。
+所有模式都会自动确保插件已注册到 `cordis.patch.yml`（缺失时自动修复），无需手动编辑任何配置文件。
 
 ### 方式二：手动两步
 
