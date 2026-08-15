@@ -24,6 +24,14 @@ const flagIdx = args.indexOf('--profile')
 const profileName = flagIdx >= 0 && args[flagIdx + 1] ? args[flagIdx + 1] : 'web'
 const sub = args[0] && !args[0].startsWith('--') ? args[0] : 'install'
 
+// launch subcommand: forward to the robust launcher (alias of dsh-web).
+if (sub === 'launch') {
+  const launcherPath = require.resolve('./launcher.js')
+  const rest = args.slice(1)
+  const child = spawnSync(process.execPath, [launcherPath, ...rest], { stdio: 'inherit' })
+  process.exit(child.status ?? 0)
+}
+
 const dshHome = process.env.DSH_HOME ?? join(homedir(), '.dsh')
 const profileDir = join(dshHome, 'profiles', profileName)
 const patchPath = join(profileDir, 'cordis.patch.yml')

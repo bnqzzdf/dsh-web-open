@@ -57,20 +57,46 @@ dsh plugin --profile web add path/to/dsh-web-open
 # 然后同样需要手动注册 cordis.patch.yml（见方式二第 2 步）
 ```
 
-## 使用
+## 命令一览（先看这里）
+
+### `dsh-web-open` —— 插件的统一命令（安装/升级/启动）
+
+| 命令 | 作用 |
+| --- | --- |
+| `dsh-web-open` | 安装 / 修复插件（幂等；自动修复 `cordis.patch.yml` 缺失或损坏） |
+| `dsh-web-open update` | **升级 profile 里的插件**到最新版（改完配置后必须用这个，重启才生效） |
+| `dsh-web-open reinstall` | 强制重装 |
+| `dsh-web-open launch` | **健壮启动** `dsh web`：3080 被占时自动换端口，绝不报错 |
+
+### 别名（兼容旧用法）
+
+| 旧命令 | 等价于 |
+| --- | --- |
+| `dsh-web` | `dsh-web-open launch` |
+| `dsh-web-open-install` | `dsh-web-open` |
+
+### 官方命令（别混淆）
+
+| 命令 | 说明 |
+| --- | --- |
+| `dsh web` | DeepSeek Harness 官方命令。**3080 被占用时会直接报错**；需要端口回退时请用 `dsh-web-open launch` |
+
+## 日常使用
 
 ```bash
-# 健壮启动（推荐）：3080 被占用时自动换端口，绝不报错
-dsh-web
-
-# 等价于 dsh web（无端口回退）
-dsh web
+# 启动（健壮版，推荐）
+dsh-web-open launch          # 或旧名 dsh-web
 
 # 指定端口
-dsh-web --port 8080
+dsh-web-open launch --port 8080
+
+# 升级插件（重要：只 npm update -g 不够，profile 里的插件不会变）
+dsh-web-open update
 ```
 
-`dsh-web` 是插件自带的健壮启动器：探测 `127.0.0.1:3080`，空闲则正常启动；已被占用则自动用 OS 分配的端口（`--port 0`）启动——浏览器、托盘、快捷方式都会自动指向实际端口。
+> ⚠️ **为什么快捷方式还打开 3080？** 因为 profile 里的插件（托盘 helper / 启动器）还是旧版。
+> 执行 `dsh-web-open update` 后**重启 dsh web**，helper 会自动更新 `launch.ps1` 并记录实际端口。
+> 验证：`%LOCALAPPDATA%\dsh-web-open\serving-url.txt`（实际端口）和 `launch.log`（快捷方式最近打开了什么）。
 
 ## 配置（环境变量）
 

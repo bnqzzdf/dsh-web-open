@@ -66,8 +66,10 @@ if (-not $target) {
 }
 if ($target) {
   Start-Process $target
+  Add-Content -Path (Join-Path $env:LOCALAPPDATA 'dsh-web-open\launch.log') -Value ("[launch] " + (Get-Date -Format 'HH:mm:ss') + " opened " + $target) -Encoding UTF8
 } else {
   Start-Process -FilePath 'cmd.exe' -ArgumentList @('/c', 'dsh web') -WindowStyle Hidden
+  Add-Content -Path (Join-Path $env:LOCALAPPDATA 'dsh-web-open\launch.log') -Value ("[launch] " + (Get-Date -Format 'HH:mm:ss') + " started dsh web") -Encoding UTF8
 }
 '@
       [IO.File]::WriteAllText($ps1, $ps1Content, (New-Object System.Text.UTF8Encoding($false)))
