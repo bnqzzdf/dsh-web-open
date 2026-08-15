@@ -71,23 +71,29 @@ if (sub === 'update') {
   }
 }
 
-// 2) cordis.patch.yml registration (always ensured)
+// 2) cordis.patch.yml registration (always ensured; also repairs a leftover
+//    flow [] marker that would make the YAML invalid)
 const INSERT = '- insert:\n    - id: web-open\n      name: dsh-web-open\n'
 if (existsSync(patchPath)) {
-  const raw = readFileSync(patchPath, 'utf8')
-  if (raw.includes('web-open')) {
-    console.log('[dsh-web-open-install] patch already registers web-open')
+  let raw = readFileSync(patchPath, 'utf8')
+  const hadFlowArray = /^\s*\[\]\s*$/m.test(raw)
+  let body = raw.replace(/^\s*\[\]\s*$/gm, '').trimEnd()
+  let patchChanged = false
+  if (hadFlowArray) {
+    console.log('[dsh-web-open-install] removed invalid [] marker from patch')
+    patchChanged = true
+  }
+  if (!body.includes('web-open')) {
+    body = body ? body + '\n\n' + INSERT : INSERT
+    console.log('[dsh-web-open-install] patch updated (web-open registered)')
+    patchChanged = true
+  } else if (hadFlowArray) {
+    console.log('[dsh-web-open-install] patch repaired (web-open registration kept)')
   } else {
-    const trimmed = raw.trim()
-    let next
-    if (trimmed === '[]' || trimmed === '') {
-      const comment = raw.replace(/\[\]\s*$/, '').trimEnd()
-      next = comment ? comment + '\n\n' + INSERT : INSERT
-    } else {
-      next = raw.trimEnd() + '\n' + INSERT
-    }
-    writeFileSync(patchPath, next)
-    console.log('[dsh-web-open-install] patch fixed (web-open registered)')
+    console.log('[dsh-web-open-install] patch already registers web-open')
+  }
+  if (patchChanged) {
+    writeFileSync(patchPath, body + '\n')
     needInstall = true
   }
 } else {
@@ -95,7 +101,6 @@ if (existsSync(patchPath)) {
   console.log('[dsh-web-open-install] created cordis.patch.yml with web-open')
   needInstall = true
 }
-
 // 3) install / update / reinstall
 const run = (cmd, a) => {
   if (process.platform === 'win32') {
