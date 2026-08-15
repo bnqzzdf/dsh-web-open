@@ -99,7 +99,7 @@ $script:ctx = $null
 $icon = New-Object System.Drawing.Icon($IconPath)
 $script:notify = New-Object System.Windows.Forms.NotifyIcon
 $notify.Icon = $icon
-$notify.Text = 'DSH Web'
+$notify.Text = 'DSH Web - ' + ($Url -replace '^https?://', '')
 $notify.Visible = $true
 
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
