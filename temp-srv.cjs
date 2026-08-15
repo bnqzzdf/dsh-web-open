@@ -1,1 +1,0 @@
-require('http').createServer((q,s)=>{s.end('ok')}).listen(58380,'127.0.0.1',()=>console.log('temp on 58380'))
