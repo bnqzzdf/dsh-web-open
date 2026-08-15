@@ -1,11 +1,11 @@
 # dsh-web-open
 
-DeepSeek Harness 插件：`dsh web` 启动完成后**自动打开默认浏览器**，不用再手动输入 `http://127.0.0.1:3080`。
+DeepSeek Harness 插件：`dsh-web-open launch` 启动服务后**自动打开默认浏览器**，不用再手动输入 `http://127.0.0.1:3080`。
 
 Windows 上额外提供完整的桌面体验：
 
 - 🐳 **系统托盘鲸鱼图标**：右键菜单（打开浏览器 / 重启服务 / 停止服务并退出）；
-- 🖥️ **隐藏控制台窗口**：`dsh web` 不再占用终端；
+- 🖥️ **隐藏控制台窗口**：服务不再占用终端；
 - 🚀 **桌面快捷方式**：自动创建「DSH Web」鲸鱼图标快捷方式（不存在时）。
 
 零运行时依赖、TypeScript 编写（对齐官方包规范：ESM + `lib/` 产物 + 类型声明）。
@@ -95,7 +95,7 @@ dsh-web-open update
 ```
 
 > ⚠️ **为什么快捷方式还打开 3080？** 因为 profile 里的插件（托盘 helper / 启动器）还是旧版。
-> 执行 `dsh-web-open update` 后**重启 dsh web**，helper 会自动更新 `launch.ps1` 并记录实际端口。
+> 执行 `dsh-web-open update` 后**运行 `dsh-web-open launch`**，helper 会自动更新 `launch.ps1` 并记录实际端口。
 > 验证：`%LOCALAPPDATA%\dsh-web-open\serving-url.txt`（实际端口）和 `launch.log`（快捷方式最近打开了什么）。
 
 ## 配置（环境变量）
@@ -110,7 +110,7 @@ dsh-web-open update
 ## 关闭
 
 ```bash
-DSH_WEB_OPEN=0 dsh web
+DSH_WEB_OPEN=0 dsh-web-open launch
 ```
 
 ## 工作原理

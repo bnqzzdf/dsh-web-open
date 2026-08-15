@@ -144,5 +144,5 @@ if (sub === 'reinstall') {
 }
 
 console.log('')
-console.log('[dsh-web-open-install] done. Restart dsh web for changes to take effect:')
-console.log('    dsh web')
+console.log('[dsh-web-open-install] done. Restart the service for changes to take effect:')
+console.log('    dsh-web-open launch')

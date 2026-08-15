@@ -158,7 +158,12 @@ $miRestart.Text = '重启服务'
 $miRestart.Add_Click({
   try { & taskkill /PID $HostPid /T /F 2>$null | Out-Null } catch {}
   Start-Sleep -Milliseconds 500
-  try { Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-Command','dsh web') -WindowStyle Hidden } catch {}
+  $lp = Join-Path $env:LOCALAPPDATA 'dsh-web-open\launch.ps1'
+  if (Test-Path $lp) {
+    try { Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',$lp) -WindowStyle Hidden } catch {}
+  } else {
+    try { Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-Command','dsh web --port 0') -WindowStyle Hidden } catch {}
+  }
 })
 $menu.Items.Add($miRestart) | Out-Null
 $menu.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator)) | Out-Null
