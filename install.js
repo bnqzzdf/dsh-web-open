@@ -70,7 +70,13 @@ if (existsSync(patchPath)) {
 }
 
 // 3) install dependencies (pnpm, then corepack fallback)
-const run = (cmd, a) => spawnSync(cmd, a, { cwd: profileDir, stdio: 'inherit', shell: process.platform === 'win32' })
+const run = (cmd, a) => {
+  if (process.platform === 'win32') {
+    const line = `${cmd} ${a.map((x) => `"${x}"`).join(' ')}`
+    return spawnSync(line, { cwd: profileDir, stdio: 'inherit', shell: true })
+  }
+  return spawnSync(cmd, a, { cwd: profileDir, stdio: 'inherit' })
+}
 if (changed) {
   console.log('[dsh-web-open-install] installing dependencies...')
   let status = run('pnpm', ['install']).status

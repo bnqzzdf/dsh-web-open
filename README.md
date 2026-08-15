@@ -22,22 +22,37 @@ Windows 上额外提供完整的桌面体验：
 
 ## 安装
 
-```bash
-# 从 npm 安装（推荐）
-dsh plugin --profile web add dsh-web-open
+> ⚠️ **重要**：`dsh plugin add`（或 pnpm add）只安装依赖包，**不会激活插件**。
+> 插件必须同时在 `cordis.patch.yml` 中注册才会被加载（否则不会打开浏览器、不会显示托盘）。
 
-# 或本地开发
-dsh plugin --profile web add path/to/dsh-web-open
+### 方式一：一键安装（推荐）
+
+```bash
+npx -y dsh-web-open
 ```
 
-## 手动配置（不通过 `dsh plugin` 命令时）
+自动完成三步：添加依赖 + 注册到 `cordis.patch.yml` + `pnpm install`（幂等，可重复运行）。
 
-编辑 `%DSH_HOME%\profiles\web\package.json`，在 `dependencies` 中加入 `dsh-web-open`，然后编辑 `cordis.patch.yml`：
+### 方式二：手动两步
 
-```yaml
-- insert:
-    - id: web-open
-      name: dsh-web-open
+```bash
+# 1) 安装依赖
+cd %DSH_HOME%\profiles\web && pnpm add dsh-web-open
+
+# 2) 注册插件（必须！）
+#    编辑 %DSH_HOME%\profiles\web\cordis.patch.yml
+#    - 文件是 [] 时，替换为：
+#    - insert:
+#        - id: web-open
+#          name: dsh-web-open
+#    - 已有其他条目时，在末尾追加同样的 - insert: 块
+```
+
+### 方式三：本地开发
+
+```bash
+dsh plugin --profile web add path/to/dsh-web-open
+# 然后同样需要手动注册 cordis.patch.yml（见方式二第 2 步）
 ```
 
 ## 使用
