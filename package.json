@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-open",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Auto-open the browser, whale tray icon, desktop shortcut and one-shot installer for `dsh web` (DeepSeek Harness plugin)",
   "type": "module",
   "main": "lib/index.js",
