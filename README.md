@@ -60,9 +60,17 @@ dsh plugin --profile web add path/to/dsh-web-open
 ## 使用
 
 ```bash
-dsh web                # 服务就绪后自动打开浏览器
-dsh web --port 8080    # 自动打开 http://127.0.0.1:8080
+# 健壮启动（推荐）：3080 被占用时自动换端口，绝不报错
+dsh-web
+
+# 等价于 dsh web（无端口回退）
+dsh web
+
+# 指定端口
+dsh-web --port 8080
 ```
+
+`dsh-web` 是插件自带的健壮启动器：探测 `127.0.0.1:3080`，空闲则正常启动；已被占用则自动用 OS 分配的端口（`--port 0`）启动——浏览器、托盘、快捷方式都会自动指向实际端口。
 
 ## 配置（环境变量）
 
